@@ -8,7 +8,7 @@ checking font families and checking if the font files exist in the c:\Windows\Fo
 
 Usage:
 - Delete the dummyFile.txt in the FontFiles folder
-- Add your fonts to the FontFiles folder in the script directory. This script works for all types of fonts.
+- Copy & Paste your fonts to the FontFiles folder in the script directory. This script works for all types of fonts.
 - Run the script.
 - You can check log file for results in "C:\Windows\Logs\fontInstall.log"
 
