@@ -5,9 +5,9 @@ $sourcePath = Join-Path $fontsFolderDirectory "\FontFiles\"
 Invoke-Expression ".\$sourcePath"
 
 # Creates a log file for this script.
-New-Item -ItemType "file" -Path "C:\Windows\Logs\fontInstallPVH.log" -Force
+New-Item -ItemType "file" -Path "C:\Windows\Logs\fontInstall.log" -Force
 # Log file path.
-$logFile = "C:\Windows\Logs\fontInstallPVH.log"
+$logFile = "C:\Windows\Logs\fontInstall.log"
 
 # Path to the font files folder.
 $destinationPath = "C:\Windows\Fonts\"
