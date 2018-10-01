@@ -42,7 +42,7 @@ function InstalledFonts {
         $key = $key.Replace(' ', '').ToLower()
         $key = $key.Replace('-', '')
         $key = $key.Replace('_', '')
-        if ($trimmedExistingFonts| Where-Object {$_ -like $key}) {
+        if ($trimmedExistingFonts.Contains($key)) {
             continue
         }
         $trimmedExistingFonts += $key
@@ -63,6 +63,7 @@ $destinationFonts = @{}
 # Function to map fonts and calculates their different hash keys.
 function FontMapper {
     param ($Path, $Map)
+    $hashes = @()
     $index = 0
     add-content -Path $logFile -Value "==============================================================================="
     add-content -Path $logFile -Value "[$time] Creating Hashtable for files in $Path"
@@ -80,14 +81,10 @@ function FontMapper {
         $key = $key.Replace(' ', '').ToLower()
         $key = $key.Replace('_', '')
 
-        $hashExists = $false
-        foreach ($fontKey in $Map.Keys) {
-            if ($Map[$fontKey].md5HashKey -like $fontValue.md5HashKey) {
-                $hashExists = $true
-            }
+        $hashKey = $fontvalue.md5HashKey
 
-        }
-
+        $hashExists = $hashes.Contains($hashKey)
+        
         $match = $Map.ContainsKey($key)
 
         if ($match -or $hashExists) {
@@ -98,6 +95,7 @@ function FontMapper {
 
 
         $Map.add($key, $fontValue)
+        $hashes += $fontValue.md5HashKey
         $title = $Map[$key].title
         add-content -Path $logFile -Value "[$time] $title element created in hash table." -Force
         add-content -Path $logFile -Value "[$time] Values in Element:" -Force
