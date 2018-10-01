@@ -42,9 +42,6 @@ function InstalledFonts {
         $key = $key.Replace(' ', '').ToLower()
         $key = $key.Replace('-', '')
         $key = $key.Replace('_', '')
-        if ($trimmedExistingFonts.Contains($key)) {
-            continue
-        }
         $trimmedExistingFonts += $key
     }
     return $trimmedExistingFonts
@@ -58,7 +55,7 @@ $time = (Get-Date -f g)
 $sourceFonts = @{}
 
 # Map of a Map of information needed for a source font.
-$destinationFonts = @{}
+$destinationFonts = @()
 
 # Function to map fonts and calculates their different hash keys.
 function FontMapper {
@@ -83,11 +80,11 @@ function FontMapper {
 
         $hashKey = $fontvalue.md5HashKey
 
-        $hashExists = $hashes.Contains($hashKey)
+        #$hashExists = $hashKey in $hashes
         
         $match = $Map.ContainsKey($key)
 
-        if ($match -or $hashExists) {
+        if ($match) {
             add-content -Path $logFile -Value "[$time] $key already exists in this hashtable" -Force
             add-content -Path $logFile -Value "==============================================================================="
             continue
@@ -111,10 +108,20 @@ function FontMapper {
 }
 
 # Function to find if a source font hash key and title is equal to a destination font hash key.
+
 function FontExists {
     param ($fontKey)
-    $exists = $installedFonts.Contains($fontKey)
-    return $exists -or $sourceFonts[$fontKey].md5HashKey -like $destinationFonts[$fontKey].md5HashKey -or (Test-Path -Path ($destinationPath + $sourceFonts[$fontKey].name))
+    $exists = $false
+    if ($installedFonts | Where-Object {$_ -eq $fontKey}) {
+        $exists = $true
+    }
+    
+    $hashExists = $false
+    if ($destinationFonts | Where-Object {$_ -contains $sourceFonts[$fontKey].md5HashKey}) {
+        $hashExists = $true
+    }
+
+    return $exists -or $hashExists
 }
 
 # Tests if script ran successfully. Using gdi32 library, temporary add resource font method.
@@ -128,7 +135,7 @@ public static extern int AddFontResource(string filePath);
 "@
     $failures = @()
 
-    foreach ($font in (Get-ChildItem $sourcePath)) {
+    foreach ($font in $(Get-ChildItem $sourcePath)) {
         if ([Session]::AddFontResource($font.FullName) -lt 1) {
             $failures.add($font)   
         }
@@ -149,31 +156,56 @@ public static extern int AddFontResource(string filePath);
     }
 }
 
+# Create a list of existing font hashes.
+function ExistingHashKeys {
+    add-content -Path $logFile -Value "==============================================================================="
+    add-content -Path $logFile -Value "[$time] Hash Keys for existing files" -Force
+    add-content -Path $logFile -Value "==============================================================================="
+
+    $index = 0
+    # Creates a map of fonts in the destination directory.
+    foreach ($font in $(Get-ChildItem -Path $destinationPath)) {
+        $index++
+        $hash = Get-Hash $font MD5
+        $destinationFonts += $hash
+        add-content -Path $logFile -Value "$index. [$time] $font MD5 HASH: $hash" -Force
+    }
+
+    add-content -Path $logFile -Value "==============================================================================="
+}
+
+
 $installedFonts = InstalledFonts
 
 # Creates a map of fonts in the source directory.
 FontMapper -Path $sourcePath -Map $sourceFonts
 
-# Creates a map of fonts in the destination directory.
-FontMapper -Path $destinationPath -Map $destinationFonts -Force
+# Populates list of existing font hashes.
+ExistingHashKeys
 
-# Index for log file.
-$index = 0
-add-content -Path $logFile -Value "==============================================================================="
-add-content -Path $logFile -Value "[$time] INSTALL PHASE" -Force
-add-content -Path $logFile -Value "==============================================================================="
+# Checks if fonts' hash keys already exist, if they don't install the font.
+function Main {
+    # Index for log file.
+    $index = 0
+    add-content -Path $logFile -Value "==============================================================================="
+    add-content -Path $logFile -Value "[$time] INSTALL PHASE" -Force
+    add-content -Path $logFile -Value "==============================================================================="
 
-# Loop that compares hash values and installs fonts.
-foreach($fontKey in $sourceFonts.Keys) {
-    $index++
-    $font = $sourceFonts[$fontKey].name
-    if (FontExists $fontKey) {
-        add-content -Path $logFile -Value "$index. [$time] $font font already exists" -Force
-        continue
+    # Loop that compares hash values and installs fonts.
+    foreach ($fontKey in $sourceFonts.Keys) {
+        $index++
+        $font = $sourceFonts[$fontKey].name
+        if (FontExists $fontKey) {
+            add-content -Path $logFile -Value "$index. [$time] $font font already exists" -Force
+            continue
+        }
+        InstallFont $sourceFonts[$fontKey].filePath
+        add-content -Path $logFile -Value "$index. [$time] |||||||||||||||||||||||| INSTALLED $font |||||||||||||||||||||||||" -Force 
     }
-    InstallFont $sourceFonts[$fontKey].filePath
-    add-content -Path $logFile -Value "$index. [$time] |||||||||||||||||||||||| INSTALLED $font |||||||||||||||||||||||||" -Force 
 }
+
+Main
+
 
 TestScript
 
