@@ -35,16 +35,19 @@ function Get-Hash {
 function InstalledFonts {
     [System.Reflection.Assembly]::LoadWithPartialName("System.Drawing")
     $installedFonts = (New-Object System.Drawing.Text.InstalledFontCollection).Families
+
     $trimmedExistingFonts = @()
     foreach ($key in $installedFonts) {
-        $key = $key.name.Replace(' ', '').ToLower()
-        $key = "$key".Replace('-', '')
+        $key = $key.Name
+        $key = $key.Replace(' ', '').ToLower()
+        $key = $key.Replace('-', '')
         $key = $key.Replace('_', '')
         if ($trimmedExistingFonts| Where-Object {$_ -like $key}) {
             continue
         }
         $trimmedExistingFonts += $key
     }
+    return $trimmedExistingFonts
 }
 
 
@@ -77,11 +80,23 @@ function FontMapper {
         $key = $key.Replace(' ', '').ToLower()
         $key = $key.Replace('_', '')
 
-        if ($Map.ContainsKey($key)) {
+        $hashExists = $false
+        foreach ($fontKey in $Map.Keys) {
+            if ($Map[$fontKey].md5HashKey -like $fontValue.md5HashKey) {
+                $hashExists = $true
+            }
+
+        }
+
+        $match = $Map.ContainsKey($key)
+
+        if ($match -or $hashExists) {
             add-content -Path $logFile -Value "[$time] $key already exists in this hashtable" -Force
             add-content -Path $logFile -Value "==============================================================================="
             continue
         }
+
+
         $Map.add($key, $fontValue)
         $title = $Map[$key].title
         add-content -Path $logFile -Value "[$time] $title element created in hash table." -Force
@@ -100,8 +115,8 @@ function FontMapper {
 # Function to find if a source font hash key and title is equal to a destination font hash key.
 function FontExists {
     param ($fontKey)
-    $exists = $installedFonts | Where-Object {$_ -like $fontKey}
-    return $exists -or $sourceFonts[$fontKey].md5HashKey -eq $destinationFonts[$fontKey].md5HashKey -or (Test-Path -Path ($destinationPath + $sourceFonts[$fontKey].name))
+    $exists = $installedFonts.Contains($fontKey)
+    return $exists -or $sourceFonts[$fontKey].md5HashKey -like $destinationFonts[$fontKey].md5HashKey -or (Test-Path -Path ($destinationPath + $sourceFonts[$fontKey].name))
 }
 
 # Tests if script ran successfully. Using gdi32 library, temporary add resource font method.
