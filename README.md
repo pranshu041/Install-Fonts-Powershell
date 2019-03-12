@@ -1,18 +1,18 @@
-Install Fonts using Powershell
+# Install Fonts using Powershell
 
 
-How it works:
+## How it works:
 
 This script installs fonts in the "FontFiles" Folder. Checks if fonts already exist by using md5 hash keys,
 checking font families and checking if the font files exist in the C:\Windows\Fonts folder.
 
-Usage:
+## How to use it:
 - Delete the dummyFile.txt in the FontFiles folder
 - Copy & Paste your fonts to the FontFiles folder in the script directory. This script works for all types of fonts.
 - Run the script.
 - You can check log file for results in C:\Windows\Logs\fontInstallPVH.log
 
-Log Legend:
+### Log Legend:
 The log file is divided into 4 sections.
 
 - Meta Data from fonts in the Font files folder
